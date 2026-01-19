@@ -23,7 +23,7 @@ struct DetailWindow: View {
                 .foregroundStyle(.white.opacity(0.9))
         }
         .padding(16)
-        .frame(width: 200)
+        .frame(width: 230)
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: .black.opacity(0.6), radius: 10, x: 0, y: 5)

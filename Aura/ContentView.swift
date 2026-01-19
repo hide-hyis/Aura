@@ -17,20 +17,7 @@ struct ContentView: View {
         ZStack {
             Color(hex: "#121217")
             StarryBackgroundView()
-            VStack(spacing: 40) {
-                Text("TOUCH YOUR CURRENT RHYTHM")
-                    .font(.title3)
-                    .fontWeight(.light)
-                    .foregroundStyle(.white)
-                    .tracking(4)
-                
-                LazyVGrid(columns: [GridItem(.fixed(140)), GridItem(.fixed(140))], spacing: 40) {
-                    feelingButton(.anxious)
-                    feelingButton(.active)
-                    feelingButton(.serene)
-                    feelingButton(.flow)
-                }
-            }
+            headline()
             
             if let detail = detailInfo {
                 // 背景をタップしたら閉じるための透明なレイヤー
@@ -41,21 +28,39 @@ struct ContentView: View {
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(1) // 最前面に配置
             }
+            
             VStack {
                 Spacer()
-                HStack {
-                    // 再生コントロール等の実装
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 60)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .padding()
+                MusicControlBar(isPlaying: true)
             }
         }
         .ignoresSafeArea()
     }
     
+    @ViewBuilder
+    private func headline() -> some View {
+        VStack(spacing: 40) {
+            Text("TOUCH YOUR CURRENT RHYTHM")
+                .font(.title3)
+                .fontWeight(.light)
+                .foregroundStyle(.white)
+                .tracking(4)
+            feelingList()
+        }
+    }
+    
+    /// 感情ボタンの一覧
+    @ViewBuilder
+    private func feelingList() -> some View {
+        LazyVGrid(columns: [GridItem(.fixed(140)), GridItem(.fixed(140))], spacing: 40) {
+            feelingButton(.anxious)
+            feelingButton(.active)
+            feelingButton(.serene)
+            feelingButton(.flow)
+        }
+    }
+    
+    /// 感情ボタン
     @ViewBuilder
     private func feelingButton(_ feeling: FeelingType) -> some View {
         FeelingButton(title: feeling.title, iconName: feeling.iconName,
@@ -71,10 +76,12 @@ struct ContentView: View {
         }
 
     }
+    
     private func startDismissalTimer() {
+        let dismissTime: UInt64 = 5_000_000_000
         cancelDismissal() // 既存のタイマーがあれば破棄
         dismissalTask = Task {
-            try? await Task.sleep(nanoseconds: 3 * 1_000_000_000) // 3秒待機
+            try? await Task.sleep(nanoseconds: dismissTime)
             if !Task.isCancelled {
                 withAnimation {
                     detailInfo = nil

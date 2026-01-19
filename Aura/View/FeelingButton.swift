@@ -38,13 +38,13 @@ struct FeelingButton: View {
             
             // 3. テキスト部分
             Text(title)
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.white.opacity(0.9))
                 .tracking(2) // 文字間隔を広げて高級感を出す
         }
-        .scaleEffect(isPressing ? 0.92 : 1.0)
-        .opacity(isPressing ? 0.8 : 1.0)
+        .scaleEffect(isPressing ? 0.8 : 1.0)
+        .opacity(isPressing ? 0.7 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressing)
         .onTapGesture {
             action()
