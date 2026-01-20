@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @ObservedObject private var audioManager = AudioManager.shared
+    
     @State private var selected: FeelingType? = nil
     @State private var detailInfo: (title: LocalizedStringKey, desc: LocalizedStringKey)? = nil
     
@@ -31,8 +33,12 @@ struct ContentView: View {
             
             VStack {
                 Spacer()
-                MusicControlBar(isPlaying: true)
+                if !audioManager.musics.isEmpty {
+                    MusicControlBar(isPlaying: true)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: audioManager.musics.isEmpty)
         }
         .ignoresSafeArea()
     }
@@ -69,7 +75,7 @@ struct ContentView: View {
             detailInfo = nil
             selected = feeling
             AudioManager.shared.musics = AudioProvider().getLocalMusic(feeling: feeling)
-            AudioManager.shared.start()
+            AudioManager.shared.startFadeLoop()
         } longPressAction: {
             cancelDismissal()
             detailInfo = (feeling.title, feeling.description)
