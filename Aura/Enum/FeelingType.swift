@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 
-enum FeelingType {
+enum FeelingType: String {
     // 心拍: 高 / HRV: 高
     case active
     // 心拍: 中 / HRV: 高
@@ -17,6 +17,10 @@ enum FeelingType {
     case flow
     // 心拍: 高 / HRV: 低
     case anxious
+    
+    var dowloadListURL: URL? {
+        return URL(string: "\(AudioProvider.baseURL)/music/\(self.rawValue)/list.json")
+    }
     
     var iconName: String {
         switch self {

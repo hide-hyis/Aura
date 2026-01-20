@@ -11,6 +11,16 @@ import AVFoundation
 class AudioManager: NSObject, AVAudioPlayerDelegate {
     private var audioPlayer: AVAudioPlayer?
     
+    static let shared = AudioManager()
+    var musics = [Music]()
+    var currentMusic: Music?
+    let numberOfLoops = 4
+    
+    func start() {
+        guard let music: Music = currentMusic ?? musics.first, let url = music.cachePath else { return }
+        play(url: url)
+    }
+    
     func play(url: URL) {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -19,11 +29,16 @@ class AudioManager: NSObject, AVAudioPlayerDelegate {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = self
             audioPlayer?.prepareToPlay()
+            audioPlayer?.numberOfLoops = self.numberOfLoops
             audioPlayer?.play()
             print("再生開始: \(url.lastPathComponent)")
         } catch {
             print("再生エラー: \(error.localizedDescription)")
         }
+    }
+    
+    func restart() {
+        audioPlayer?.play()
     }
     
     func stop() {

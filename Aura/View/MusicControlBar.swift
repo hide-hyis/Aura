@@ -72,6 +72,11 @@ struct MusicControlBar: View {
             
             Button(action: {
                 isPlaying.toggle()
+                if isPlaying {
+                    AudioManager.shared.stop()
+                } else {
+                    AudioManager.shared.restart()
+                }
             }) {
                 Image(systemName: isPlaying ? "play.fill" :"pause.fill")
                     .font(.system(size: 20))
