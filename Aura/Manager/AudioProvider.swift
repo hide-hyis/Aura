@@ -12,29 +12,11 @@ struct AudioProvider {
     static let baseURL = Secrets.storageBaseURL
     static let listURL = URL(string: "\(AudioProvider.baseURL)/music/list.json")
     
-    /// ファイル名から再生可能なローカルURLを取得する
-//    func fetchAudioURL(fileName: String, completion: @escaping (Result<URL, Error>) -> Void) {
-//        guard let remoteURL = URL(string: "\(AudioProvider.baseURL)/music/Serene")?.appendingPathComponent(fileName) else {
-//            completion(.failure(NSError(domain: "InvalidURL", code: -1)))
-//            return
-//        }
-//        
-//        cacheManager.getAudioURL(from: remoteURL) { localURL in
-//            if let localURL = localURL {
-//                completion(.success(localURL))
-//            } else {
-//                completion(.failure(NSError(domain: "DownloadError", code: -2)))
-//            }
-//        }
-//    }
-    
-    func getLocalMusic(feeling: FeelingType) -> [Music] {
-        var musics = [Music]()
-        cacheManager.getMusicList(from: feeling) { fetchMusic in
-            guard let fetchMusic else { return }
-            musics.append(fetchMusic)
+    func getLocalMusic(feeling: FeelingType, completion:@escaping ([Music]) -> Void){
+        cacheManager.getMusicList(from: feeling) { musics in
+            // 毎回音源をランダムにする
+            completion(musics.shuffled())
         }
-        return musics
     }
     
     /// list.jsonファイルをダウンロードして、一時的な保存先URLを返す

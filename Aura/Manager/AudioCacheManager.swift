@@ -47,14 +47,6 @@ class AudioCacheManager {
     /// 音源リストを取得
     func getAudioList(completion: @escaping (Result<[Music], Error>) -> Void) {
         
-        // 1. ローカルにファイルがあるかチェック
-        if fileManager.fileExists(atPath: localListURL.path) {
-            print("List Cache hit")
-            self.decodeLocalJSON(url: localListURL, completion: completion)
-            return
-        }
-        
-        // 2. なければダウンロード
         AudioProvider.downloadAudioList { result in
             
             switch result {
@@ -94,15 +86,27 @@ class AudioCacheManager {
     }
     
     /// 音源のローカルURLを取得（なければダウンロード）
-    func getMusicList(from feeling: FeelingType, completion: @escaping (Music?) -> Void) {
-        guard var targetMusics = self.localMusicList?.filter({ $0.feeling == feeling }) else {
-            completion(nil)
+    func getMusicList(from feeling: FeelingType, completion: @escaping ([Music]) -> Void) {
+        guard let targetMusics = self.localMusicList?.filter({ $0.feeling == feeling }), !targetMusics.isEmpty else {
+            completion([])
             return
         }
-        
-        // 音源をキャッシュに保存する
-        targetMusics.forEach { music in
-            self.saveCacheIfNeeded(music: music, completion: completion)
+
+        var resultMusics = [Music]()
+        let group = DispatchGroup()
+
+        for music in targetMusics {
+            group.enter()
+            self.saveCacheIfNeeded(music: music) { cacheMusic in
+                if let cacheMusic {
+                    resultMusics.append(cacheMusic)
+                }
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            completion(resultMusics)
         }
     }
     
@@ -123,11 +127,13 @@ class AudioCacheManager {
         // 2. 存在しない場合はダウンロード
         print("Downloading: \(music.name)...")
         guard let url = music.dowloadURL else {
+            assertionFailure("存在しないダウンロード: \(music.name)")
             completion(nil)
             return
         }
         let task = URLSession.shared.downloadTask(with: url) { temporaryURL, response, error in
             guard let temporaryURL = temporaryURL, error == nil else {
+                assertionFailure("音源ダウンロードエラー: \(url.absoluteString)")
                 completion(nil)
                 return
             }
@@ -135,9 +141,7 @@ class AudioCacheManager {
             do {
                 // 一時ファイルを正規のキャッシュ場所に移動
                 try self.fileManager.moveItem(at: temporaryURL, to: localURL)
-                DispatchQueue.main.async {
-                    completion(music)
-                }
+                completion(music)
             } catch {
                 print("💙 Save error: \(error)")
                 completion(nil)

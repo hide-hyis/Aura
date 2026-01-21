@@ -11,6 +11,10 @@ import SwiftUI
 import Combine
 
 class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    enum MoveDirection {
+        case next
+        case previous
+    }
     private var audioPlayer: AVAudioPlayer?
     
     static let shared = AudioManager()
@@ -64,7 +68,10 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audioPlayer?.volume = 0
             audioPlayer?.prepareToPlay()
 
-            guard let duration = audioPlayer?.duration else { return }
+            guard let duration = audioPlayer?.duration else {
+                assertionFailure("audioPlayer?.durationが見つからない: \(url.absoluteString)")
+                return
+            }
             loopInterval = duration - fadeOutDuration
 
             audioPlayer?.play()
@@ -72,7 +79,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
 
             scheduleFadeOut()
         } catch {
-            print("startFadeLoop error:", error)
+            print("startFadeLoop error: \(url.path)\n", error)
         }
     }
 
@@ -124,7 +131,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
-    func stop() {
+    private func stop() {
         fadeTimer?.invalidate()
         loopTimer?.invalidate()
         audioPlayer?.stop()
@@ -168,6 +175,59 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
     }
     
+    /// 次の曲に進む
+    func playNext(direction: MoveDirection) {
+        fadeTimer?.invalidate()
+        loopTimer?.invalidate()
+        
+        guard let player = audioPlayer, !musics.isEmpty else { return }
+        
+        let interval: TimeInterval = 0.5
+        let step = player.volume / Float(fadeOutDuration / interval)
+        
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] timer in
+            guard let self = self else {
+                timer.invalidate()
+                return
+            }
+            
+            player.volume -= step
+            
+            if player.volume <= 0 {
+                timer.invalidate()
+                player.stop()
+                
+                self.updateCurrentMusicToNext(direction: direction)
+                self.startFadeLoop(fadeIn: self.fadeInDuration, fadeOut: self.fadeOutDuration)
+            }
+        }
+    }
+    
+    /// currentMusicを次のインデックスの曲に更新する
+    private func updateCurrentMusicToNext(direction: MoveDirection) {
+        guard !musics.isEmpty else { return }
+        
+        // 現在の曲が何番目か探す
+        let currentIndex = musics.firstIndex(where: { $0.name == currentMusic?.name }) ?? 0
+        var targetIndex: Int
+        
+        switch direction {
+        case .next:
+            targetIndex = currentIndex + 1
+            if targetIndex >= musics.count {
+                targetIndex = 0
+            }
+        case .previous:
+            targetIndex = currentIndex - 1
+            if targetIndex < 0 {
+                targetIndex = musics.count - 1
+            }
+        }
+        
+        currentMusic = musics[targetIndex]
+        print("曲を切り替えました: \(currentMusic?.name ?? "Unknown")")
+    }
+    
     private func scheduleFadeOut(remainingTime: TimeInterval? = nil) {
         loopTimer?.invalidate()
         
@@ -181,10 +241,5 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         loopTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             self?.startFadeOutAndRestart()
         }
-    }
-    
-    // 再生完了時の処理などが必要ならデリゲートメソッドを実装
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        print("再生完了")
     }
 }
