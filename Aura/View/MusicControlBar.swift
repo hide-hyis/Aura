@@ -88,7 +88,7 @@ struct MusicControlBar: View {
     @ViewBuilder
     private func backwardButton() -> some View {
         Button(action: {
-            print("backward Tapped image")
+            AudioManager.shared.playNext(direction: .previous)
         }) {
             Image(systemName: "backward.fill")
                 .font(.system(size: 14))
@@ -100,7 +100,7 @@ struct MusicControlBar: View {
     @ViewBuilder
     private func forwardButton() -> some View {
         Button(action: {
-            print("Tapped image")
+            AudioManager.shared.playNext(direction: .next)
         }) {
             Image(systemName: "forward.fill")
                 .font(.system(size: 14))
