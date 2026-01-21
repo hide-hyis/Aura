@@ -74,8 +74,11 @@ struct ContentView: View {
             cancelDismissal()
             detailInfo = nil
             selected = feeling
-            AudioManager.shared.musics = AudioProvider().getLocalMusic(feeling: feeling)
-            AudioManager.shared.startFadeLoop()
+            AudioProvider().getLocalMusic(feeling: feeling) { musics in
+                AudioManager.shared.musics = musics
+                AudioManager.shared.startFadeLoop()
+            }
+            
         } longPressAction: {
             cancelDismissal()
             detailInfo = (feeling.title, feeling.description)
