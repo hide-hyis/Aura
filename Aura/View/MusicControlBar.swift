@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct MusicControlBar: View {
-    @State var isPlaying: Bool
+    @Binding var isPlaying: Bool
+    @Binding var volume: Float
     
     var body: some View {
         HStack(spacing: 20) {
@@ -76,7 +77,6 @@ struct MusicControlBar: View {
                 } else {
                     AudioManager.shared.replay()
                 }
-                isPlaying.toggle()
             }) {
                 Image(systemName: isPlaying ? "pause.fill" :"play.fill")
                     .font(.system(size: 20))
@@ -112,6 +112,6 @@ struct MusicControlBar: View {
 #Preview {
     ZStack {
         Color(hex: "#121217")
-        MusicControlBar(isPlaying: true)
+        MusicControlBar(isPlaying: .constant(true), volume: .constant(0.3))
     }
 }

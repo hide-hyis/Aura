@@ -34,7 +34,7 @@ struct ContentView: View {
             VStack {
                 Spacer()
                 if !audioManager.musics.isEmpty {
-                    MusicControlBar(isPlaying: true)
+                    MusicControlBar(isPlaying: $audioManager.isPlaying, volume: $audioManager.volume)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }

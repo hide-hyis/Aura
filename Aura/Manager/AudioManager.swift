@@ -20,6 +20,9 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     static let shared = AudioManager()
     @Published var musics = [Music]()
     @Published var currentMusic: Music?
+    @Published var volume: Float = 0.5
+    @Published var isPlaying: Bool = false
+    
     let numberOfLoops = 4
     
     private var fadeTimer: Timer?
@@ -44,6 +47,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             audioPlayer?.prepareToPlay()
             audioPlayer?.numberOfLoops = self.numberOfLoops
             audioPlayer?.play()
+            isPlaying = true
             print("再生開始: \(url.lastPathComponent)")
         } catch {
             print("再生エラー: \(error.localizedDescription)")
@@ -75,6 +79,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             loopInterval = duration - fadeOutDuration
 
             audioPlayer?.play()
+            isPlaying = true
             startFadeIn()
 
             scheduleFadeOut()
@@ -136,6 +141,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         loopTimer?.invalidate()
         audioPlayer?.stop()
         audioPlayer = nil
+        isPlaying = false
     }
 
     func replay() {
@@ -152,6 +158,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         }
         
         startFadeIn()
+        isPlaying = true
     }
 
     func pause() {
@@ -170,6 +177,7 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
                 player.volume = 0
                 player.pause() // 完全停止ではなく一時停止（currentTimeを保持）
                 timer.invalidate()
+                self.isPlaying = false
                 print("フェードアウト完了: 一時停止中")
             }
         }
@@ -196,9 +204,11 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             if player.volume <= 0 {
                 timer.invalidate()
                 player.stop()
+                self.isPlaying = false
                 
                 self.updateCurrentMusicToNext(direction: direction)
                 self.startFadeLoop(fadeIn: self.fadeInDuration, fadeOut: self.fadeOutDuration)
+                self.isPlaying = true
             }
         }
     }
