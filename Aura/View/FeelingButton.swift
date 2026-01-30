@@ -42,6 +42,7 @@ struct FeelingButton: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.white.opacity(0.9))
                 .tracking(2) // 文字間隔を広げて高級感を出す
+                .symbolEffect(.breathe, isActive: isAnimate)
         }
         .scaleEffect(isPressing ? 0.8 : 1.0)
         .opacity(isPressing ? 0.7 : 1.0)

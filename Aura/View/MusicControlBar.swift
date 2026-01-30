@@ -8,57 +8,88 @@
 import SwiftUI
 
 struct MusicControlBar: View {
+    @Binding var isExpanded: Bool
     @Binding var isPlaying: Bool
     @Binding var volume: Float
+    @Binding var activeThought: String?
+    @State private var thoughtText: String = ""
+    var feeling: FeelingType?
     
     var body: some View {
-        HStack(spacing: 20) {
-            // 左：ステータスエリア
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Now Guiding")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.5))
-                Text("Deep Stillness")
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 80)
-            
-            Spacer()
-            
-            // 中央：メインコントロール
-            HStack(spacing: 25) {
+        VStack(spacing: 0) {
+            expandArea()
+            HStack(spacing: 60) {
                 backwardButton()
                 pauseButton()
                 forwardButton()
             }
             .foregroundStyle(.white)
-            
-            Spacer()
-            
-            // 右：ユーティリティ
-            HStack(spacing: 15) {
-                Image(systemName: "timer")
-                Image(systemName: "waveform.path.ecg.gradient")
-                    .symbolEffect(.bounce, options: .repeating)
-            }
-            .font(.system(size: 16))
-            .foregroundStyle(.white.opacity(0.8))
+            .padding(.bottom, 15)
         }
         .padding(.horizontal, 24)
-        .frame(height: 72)
+        .frame(width: UIScreen.main.bounds.width - 40,
+               height: isExpanded ? 600 : 72,
+               alignment: .bottom)
         .background {
-            // 💡 iOS 26 Liquid Glass: 周囲をボカしつつ、自身の縁は鮮明に
-            Capsule()
+            RoundedRectangle(cornerRadius: isExpanded ? 40 : 71)
                 .fill(.ultraThinMaterial)
                 .overlay(
-                    Capsule()
+                    RoundedRectangle(cornerRadius: isExpanded ? 40 : 71)
                         .stroke(.white.opacity(0.15), lineWidth: 0.5)
                 )
-                .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
+                    }
+                }
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 40) // セーフエリアを考慮
+        .padding(.bottom, 40)
+    }
+    
+    @ViewBuilder
+    private func expandArea() -> some View {
+        if let feeling, isExpanded {
+            switch feeling {
+            case .active:
+                InnerCanvasView(isExpanded: $isExpanded)
+            case .serene:
+                thouhtText()
+            case .flow:
+                thouhtText()
+            case .anxious:
+                EmptyView()
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func thouhtText() -> some View {
+        Spacer()
+        VStack(spacing: 15) {
+            TextField("", text: $thoughtText, prompt: Text("今の気持ちを置いてください").foregroundStyle(.white.opacity(0.2)))
+                .multilineTextAlignment(.center)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .tint(.white)
+                .submitLabel(.done)
+                .onSubmit {
+                    if !thoughtText.isEmpty {
+                        withAnimation(.spring()) {
+                            // 1. ContentView側の状態に渡して浮遊を開始させる
+                            activeThought = thoughtText
+                            thoughtText = ""
+                            isExpanded = false
+                        }
+                    }
+                }
+                .padding(.top, 40).padding(.bottom, 40)
+                .transition(.asymmetric(
+                    insertion: .opacity.animation(.easeIn(duration: 0.3).delay(0.2)),
+                    removal: .opacity.animation(.easeOut(duration: 0.1))
+                ))
+            Spacer()
+        }
     }
     
     /// 再生、一時停止ボタン
@@ -79,7 +110,7 @@ struct MusicControlBar: View {
                 }
             }) {
                 Image(systemName: isPlaying ? "pause.fill" :"play.fill")
-                    .font(.system(size: 20))
+                    .font(.system(size: 26))
             }
         }
     }
@@ -91,7 +122,7 @@ struct MusicControlBar: View {
             AudioManager.shared.playNext(direction: .previous)
         }) {
             Image(systemName: "backward.fill")
-                .font(.system(size: 14))
+                .font(.system(size: 18))
         }
         .buttonStyle(.plain)
     }
@@ -103,7 +134,7 @@ struct MusicControlBar: View {
             AudioManager.shared.playNext(direction: .next)
         }) {
             Image(systemName: "forward.fill")
-                .font(.system(size: 14))
+                .font(.system(size: 18))
         }
         .buttonStyle(.plain)
     }
@@ -112,6 +143,6 @@ struct MusicControlBar: View {
 #Preview {
     ZStack {
         Color(hex: "#121217")
-        MusicControlBar(isPlaying: .constant(true), volume: .constant(0.3))
+        MusicControlBar(isExpanded: .constant(false), isPlaying: .constant(true), volume: .constant(0.3), activeThought: .constant(""), feeling: FeelingType.active)
     }
 }

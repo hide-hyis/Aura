@@ -14,10 +14,13 @@ struct ContentView: View {
     @State private var detailInfo: (title: LocalizedStringKey, desc: LocalizedStringKey)? = nil
     
     @State private var dismissalTask: Task<Void, Never>? = nil
+    @State private var isExpanded = false
+    @State private var activeThought: String? = nil
     
     var body: some View {
         ZStack {
             Color(hex: "#121217")
+            thouhtIfNeeded()
             StarryBackgroundView()
             headline()
             
@@ -34,11 +37,12 @@ struct ContentView: View {
             VStack {
                 Spacer()
                 if !audioManager.musics.isEmpty {
-                    MusicControlBar(isPlaying: $audioManager.isPlaying, volume: $audioManager.volume)
+                    MusicControlBar(isExpanded: $isExpanded, isPlaying: $audioManager.isPlaying, volume: $audioManager.volume, activeThought: $activeThought, feeling: selected)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: audioManager.musics.isEmpty)
+            .offset(y: isExpanded ? -10 : 0)
+            .animation(.spring(response: 0.5, dampingFraction: 0.8), value: isExpanded)
         }
         .ignoresSafeArea()
     }
@@ -52,6 +56,16 @@ struct ContentView: View {
                 .foregroundStyle(.white)
                 .tracking(4)
             feelingList()
+        }
+    }
+    
+    @ViewBuilder
+    private func thouhtIfNeeded() -> some View {
+        if let thought = activeThought {
+            FloatingThoughtView(text: thought) {
+                activeThought = nil
+            }
+            .offset(y: -100)
         }
     }
     
