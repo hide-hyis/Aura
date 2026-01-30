@@ -15,7 +15,13 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
         case next
         case previous
     }
-    private var audioPlayer: AVAudioPlayer?
+    
+    private var audioPlayer: AVAudioPlayer? {
+        didSet {
+            // プレイヤーが新しく生成されるたびに、現在のスライダー値を反映
+            audioPlayer?.volume = self.volume
+        }
+    }
     
     static let shared = AudioManager()
     @Published var musics = [Music]()
@@ -23,8 +29,9 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     @Published var volume: Float = 0.5
     @Published var isPlaying: Bool = false
     
-    let numberOfLoops = 4
+    private let numberOfLoops = 4
     
+    private var currentLoopCount = 0
     private var fadeTimer: Timer?
     private var loopTimer: Timer?
 
@@ -32,26 +39,15 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
     private var fadeOutDuration: TimeInterval = 2.0
     private var loopInterval: TimeInterval = 0
     
-    func start() {
-        guard let music: Music = currentMusic ?? musics.first, let url = music.cachePath else { return }
-        play(url: url)
+    override init() {
+        super.init()
+        let systemVolume = AVAudioSession.sharedInstance().outputVolume
+        self.volume = systemVolume
     }
     
-    func play(url: URL) {
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.delegate = self
-            audioPlayer?.prepareToPlay()
-            audioPlayer?.numberOfLoops = self.numberOfLoops
-            audioPlayer?.play()
-            isPlaying = true
-            print("再生開始: \(url.lastPathComponent)")
-        } catch {
-            print("再生エラー: \(error.localizedDescription)")
-        }
+    func updatePlayerVolume() {
+        audioPlayer?.volume = self.volume
+        print("volume: \(self.volume)")
     }
     
     func startFadeLoop(
@@ -121,18 +117,27 @@ class AudioManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
             }
 
             player.volume -= step
+            // ボリュームがまだ残っているならここで終了
+            guard player.volume <= 0 else { return }
 
-            if player.volume <= 0 {
-                player.stop()
-                timer.invalidate()
-
-                player.currentTime = 0
-                player.volume = 0
-                player.play()
-
-                self.startFadeIn()
-                self.scheduleFadeOut()
+            timer.invalidate()
+            player.volume = 0
+            
+            self.currentLoopCount += 1
+            
+            if self.currentLoopCount >= self.numberOfLoops {
+                print("規定回数ループ完了。次の曲へ進みます。")
+                self.currentLoopCount = 0
+                self.playNext(direction: .next)
+                return
             }
+
+            player.stop()
+            player.currentTime = 0
+            player.play()
+            
+            self.startFadeIn()
+            self.scheduleFadeOut()
         }
     }
     
